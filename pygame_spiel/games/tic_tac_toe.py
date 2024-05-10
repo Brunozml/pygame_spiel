@@ -123,7 +123,7 @@ class TicTacToe(base.Game):
                 self._bots[1].inform_action(self._state, self._current_player, action)
                 if self._quadrant_pos_map_x[action] not in self._list_x_pos:
                     self._list_x_pos.append(self._quadrant_pos_map_x[action])
-        elif self._current_player == 1:
+        elif self._current_player == 1: # bot
             action = self._bots[1].step(self._state)
             if self._quadrant_pos_map_circle[action] not in self._list_o_pos:
                 self._state.apply_action(action)

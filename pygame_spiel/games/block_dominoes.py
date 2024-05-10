@@ -32,29 +32,6 @@ class Dominoes(base.Game):
         self._space_between_tiles = 20
         self._selected_tile = None
 
-        self._pawn_white = pygame.image.load(
-            project_root / "pygame_spiel/images/breakthrough/pawn_white.png"
-        ).convert_alpha()
-        self._pawn_white_selected = pygame.image.load(
-            project_root
-            / "pygame_spiel/images/breakthrough/pawn_white_selected.png"
-        ).convert_alpha()
-        self._pawn_black = pygame.image.load(
-            project_root / "pygame_spiel/images/breakthrough/pawn_black.png"
-        ).convert_alpha()
-
-        self._pawn_white = pygame.transform.scale(self._pawn_white, (95, 95))
-        self._pawn_white_selected = pygame.transform.scale(
-            self._pawn_white_selected, (95, 95)
-        )
-        self._pawn_black = pygame.transform.scale(self._pawn_black, (95, 95))
-
-        self._selected_row, self._selected_col = None, None
-
-        # Next two lists are from (lines 36-40):
-        # https://github.com/google-deepmind/open_spiel/blob/efa004d8c5f5088224e49fdc198c5d74b6b600d0/open_spiel/games/breakthrough.cc#L36
-        self._k_dir_row_offsets = [1, 1, 1, -1, -1, -1]
-        self._k_dir_col_offsets = [-1, 0, 1, -1, 0, 1]
 
     def _draw_board(self):
         """
@@ -77,22 +54,12 @@ class Dominoes(base.Game):
             print(self._state.hands)
             self._state.apply_action(outcome)
 
-        # Get the hands of the players
-        hand1 = self._state.hands[0]
-        hand2 = self._state.hands[1]
-        # Render the text
-        text_surface1 = self._text_font.render(f"{hand1}", True, (255, 255, 255))
-        text_surface2 = self._text_font.render(f"{hand2}", True, (255, 255, 255))
-
-        screen_height = self._screen.get_height()
-        self._screen.blit(text_surface1, (0, screen_height - text_surface1.get_height()))
-        self._screen.blit(text_surface2, (0, 0))
-
         # TODO : center this and make it be fixed on starting tile
         # draw the played hands
         board = self._get_board()
+        tile_width = self._edges[0].get_width() * 2  # Assuming this is the width of a tile
         for i, tile in enumerate(board):
-            x = 100 + i * 100
+            x = 100 + i * tile_width
             y = 200
             self._draw_tile(tile, x, y)
     
@@ -147,6 +114,32 @@ class Dominoes(base.Game):
             # Draw the images
             self._screen.blit(image1, (x, y))
             self._screen.blit(image2, (x + image1.get_width(), y))
+        
+    def _draw_text(self, text: str, text_col: t.Tuple[int, int, int], x: int, y: int):
+        """
+        Draws a text on the board. Used to write whether the player has won or
+        lost the game
+
+        Parameters:
+            text (str): text to visualize
+            text_col (tuple): text's color in the format (red, blue, green)
+            x (int): x coordinate
+            y (int): y coordinate
+
+                    # Get the hands of the players
+        hand1 = self._state.hands[0]
+        hand2 = self._state.hands[1]
+        # Render the text
+        text_surface1 = self._text_font.render(f"{hand1}", True, (255, 255, 255))
+        text_surface2 = self._text_font.render(f"{hand2}", True, (255, 255, 255))
+
+        screen_height = self._screen.get_height()
+        self._screen.blit(text_surface1, (0, screen_height - text_surface1.get_height()))
+        self._screen.blit(text_surface2, (0, 0))
+
+        """
+        img = self._text_font.render(text, True, text_col)
+        self._screen.blit(img, (x, y))
 
     # TODO: improve this function so that it doens't count the empty space between tiles as part of the tile
     def _get_tile_at_pos(self, pos):
@@ -185,9 +178,6 @@ class Dominoes(base.Game):
             board (list): list of tile tuples containing the current state of the board
         """
         board = collections.deque()
-
-
-        board = []
         current_open_edges = None
         for action in self._state.actions_history:
         # check if action is played on an empty board
@@ -208,10 +198,19 @@ class Dominoes(base.Game):
             current_open_edges = board[0][0], board[-1][1]
         return board
 
-    # TODO: add support for following moves
+    # TODO: add support for when more than one action is available 
     def _get_action_index(self, tile):
         """ returns the index of the action in the list of actions. Currently only supports first move"""
-        action = Action(0, tile, None)
+        state = self._state
+        if not state.open_edges: # first move
+            action = Action(0, tile, None)
+        elif tile[0] == state.open_edges[0] or tile[1] == state.open_edges[0]:
+            action = Action(0, tile, state.open_edges[0])
+        elif tile[0] == state.open_edges[1] or tile[1] == state.open_edges[1]:
+            action = Action(0, tile, state.open_edges[1])
+        else: # invalid move
+            return
+
         return _ACTIONS_STR.index(str(action))
     
 
@@ -312,6 +311,12 @@ class Dominoes(base.Game):
             if action in state.legal_actions():
                 state.apply_action(action)
                 print(f"Applied action: {action}")
+        elif self._current_player == 1:
+            action = self._bots[1].step(state)
+            state.apply_action(action)
+            print(f"{self._bots[1]} applied action: {action}" if action is not None else "No action applied")
+           
+           
             # print( f"Selected tile: {self._selected_tile}, "
             #        f"index {self._get_action_index(self._selected_tile)}"
             #        f"is legal: {self._get_action_index(self._selected_tile) in state.legal_actions()}"
@@ -360,3 +365,13 @@ class Dominoes(base.Game):
         self._draw_hand(0)
         self._draw_hand(1)
         # print(self._get_board())
+
+        # game is over
+        if self._current_player == -4:
+            rewards = self._state.rewards()
+            if rewards[0] == rewards[1]:
+                self._draw_text("It's a draw!", (255, 255, 255), 600, 500)
+            elif rewards[0] > 0:
+                self._draw_text(f"Player 1 wins! {rewards[0]} points", (255, 255, 255), 600, 500)
+            elif rewards[1] > 0:
+                self._draw_text(f"Player 2 wins! {rewards[1]} points", (255, 255, 255), 600, 500)

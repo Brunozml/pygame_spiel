@@ -13,7 +13,7 @@ class Menu:
         pygame.display.set_caption("Pygame Open Spiel")
 
         self._selected_game = "python_block_dominoes"
-        self._selected_opponent_type = "mcts"
+        self._selected_opponent_type = "random"
         self._list_opponent_types = self._get_game_available_bots(self._selected_game)
         drop_select_items = [
             (opp_type, i) for i, opp_type in enumerate(self._list_opponent_types)
