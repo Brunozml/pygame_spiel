@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pygame_spiel.games import base
 
-class Breakthrough(base.Game):
+class Dominoes(base.Game):
     def __init__(self, name, current_player):
         super().__init__(name, current_player)
 

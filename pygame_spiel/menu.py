@@ -26,7 +26,7 @@ class Menu:
         # self._mainmenu.add.text_input('Name: ', default='username', maxchar=20)
         self._menu_dropselect_game = self._mainmenu.add.dropselect(
             "Game :",
-            [("breakthrough", 1), ("tic_tac_toe", 2)],
+            [("breakthrough", 1), ("tic_tac_toe", 2), ("python_block_dominoes", 3)],
             onchange=self._select_game,
             default=0,
         )

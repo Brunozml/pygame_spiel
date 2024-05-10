@@ -7,3 +7,6 @@ build*/
 cmake-build-*/
 dist/
 pygame_spiel.egg-info/
+
+# cache
+__pycache__/

@@ -6,6 +6,9 @@ from pathlib import Path
 from pygame_spiel.games import base
 
 
+# Go up one level to the 'pygame_spiel' directory
+project_root = Path(__file__).resolve().parents[1]
+
 class TicTacToe(base.Game):
     def __init__(self, name, current_player):
         super().__init__(name, current_player)
@@ -22,11 +25,14 @@ class TicTacToe(base.Game):
         self._line_v2_x_start, self._line_v2_y_start = 400, 0
         self._line_v2_x_end, self._line_v2_y_end = 400, 600
 
-        package_path = site.getsitepackages()[0]
+        # package_path = site.getsitepackages()[0]
 
-        self._x_image = pygame.image.load(
-            Path(package_path) / "pygame_spiel/images/tic_tac_toe/x_image.png"
-        ).convert_alpha()
+        # TODO: change the path to a relative path later
+        # Construct the full path to the image
+        # image_path = "/Users/brunozorrilla/Documents/GitHub/pygame_spiel/pygame_spiel/images/tic_tac_toe/x_image.png"
+        image_path = project_root = Path(__file__).resolve().parents[1] / "images/tic_tac_toe/x_image.png"
+
+        self._x_image = pygame.image.load(str(image_path)).convert_alpha()
 
         self._quadrant_pos_map_x = [
             (20, 20),

@@ -8,6 +8,7 @@ import os
 
 from pygame_spiel.games.settings import SCREEN_SIZE, BREAKPOINTS_DRIVE_IDS
 from pygame_spiel.utils import init_bot, download_weights
+import open_spiel.python.games
 
 
 class Game(metaclass=abc.ABCMeta):
