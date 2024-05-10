@@ -304,11 +304,13 @@ class Breakthrough(base.Game):
             action = self._bots[1].step(self._state)
             self._state.apply_action(action)
 
+        # Update state
         self._current_player = self._state.current_player()
         self._state_string = self._state.to_string()
 
         # Visualization
-        self._screen.blit(self._background, (0, 0))
+        # self._screen.blit(self._background, (0, 0))
+        self._screen.fill("white")
 
         for row in range(8):
             for col in range(8):

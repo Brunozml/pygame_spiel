@@ -12,7 +12,7 @@ class Menu:
         self._menu_surface = pygame.display.set_mode([600, 600])
         pygame.display.set_caption("Pygame Open Spiel")
 
-        self._selected_game = "breakthrough"
+        self._selected_game = "python_block_dominoes"
         self._selected_opponent_type = "mcts"
         self._list_opponent_types = self._get_game_available_bots(self._selected_game)
         drop_select_items = [
@@ -26,7 +26,7 @@ class Menu:
         # self._mainmenu.add.text_input('Name: ', default='username', maxchar=20)
         self._menu_dropselect_game = self._mainmenu.add.dropselect(
             "Game :",
-            [("breakthrough", 1), ("tic_tac_toe", 2), ("python_block_dominoes", 3)],
+            [("python_block_dominoes", 1), ("tic_tac_toe", 2), ("breakthrough", 3)],
             onchange=self._select_game,
             default=0,
         )

@@ -3,7 +3,7 @@ import typing as t
 import math
 import site
 from pathlib import Path
-
+import numpy as np
 
 from pygame_spiel.games import base
 
@@ -16,12 +16,21 @@ class Dominoes(base.Game):
         # package_path = site.getsitepackages()[0]
         # for development-mode install, ho up one level to the 'pygame_spiel' directory
         project_root = Path(__file__).resolve().parents[2]
-
+        self._text_font = pygame.font.SysFont("Arial", 20)
 
         # Load images
         self._background = pygame.image.load(
             project_root / "pygame_spiel/images/breakthrough/chess_board.png"
         ).convert_alpha()
+
+        self._edges = [
+            pygame.image.load(
+                project_root / "pygame_spiel" / "images" / "block_dominoes" / f"{i}.png").convert_alpha()
+                  for i in range(7)
+        ]
+        self._space_between_tiles = 20
+        self._selected_tile = None
+
         self._pawn_white = pygame.image.load(
             project_root / "pygame_spiel/images/breakthrough/pawn_white.png"
         ).convert_alpha()
@@ -46,6 +55,103 @@ class Dominoes(base.Game):
         self._k_dir_row_offsets = [1, 1, 1, -1, -1, -1]
         self._k_dir_col_offsets = [-1, 0, 1, -1, 0, 1]
 
+    def _draw_board(self):
+        """
+        Draws the board on the screen.
+
+        This function is used to draw the board on the screen. It's called at each iteration
+        to update the screen with the current state of the game.
+        """
+
+        # Fill the screen with green
+        self._screen.fill((3,250,10))
+
+        # print the board
+
+        if self._state.is_chance_node():
+            outcomes = self._state.chance_outcomes()
+            action_list, prob_list = zip(*outcomes)
+            outcome = np.random.choice(action_list, p=prob_list)
+            print(f"Chance chose: {outcome} ({self._state.action_to_string(outcome)})")
+            print(self._state.hands)
+            self._state.apply_action(outcome)
+
+        # Get the hands of the players
+        hand1 = self._state.hands[0]
+        hand2 = self._state.hands[1]
+        # Render the text
+        text_surface1 = self._text_font.render(f"{hand1}", True, (255, 255, 255))
+        text_surface2 = self._text_font.render(f"{hand2}", True, (255, 255, 255))
+
+        screen_height = self._screen.get_height()
+        self._screen.blit(text_surface1, (0, screen_height - text_surface1.get_height()))
+        self._screen.blit(text_surface2, (0, 0))
+
+        # draw the played hands
+    
+    def _draw_hand(self, player_id):
+        hand = self._state.hands[player_id]
+        tile_width = self._edges[0].get_width() * 2  # assuming all tiles have the same width
+
+        # Calculate the total width of the hand
+        hand_width = len(hand) * (tile_width + self._space_between_tiles) - self._space_between_tiles
+
+        # Calculate the starting x-coordinate to center the hand
+        start_x = (self._screen.get_width() - hand_width) // 2
+
+        # Calculate the y-coordinate based on the player_id
+        if player_id == 0:
+            y = self._screen.get_height() - self._edges[0].get_height()  # bottom of the screen
+        else:
+            y = 0  # top of the screen
+
+            # Draw the tiles
+        for i, tile in enumerate(hand):
+            x = start_x + i * (tile_width + self._space_between_tiles)
+            self._draw_tile(tile, x, y)
+
+    
+    def _draw_tile(self, tile, x, y):
+        """
+        Draws a tile horizonatlly on the screen.
+
+        This function is used to draw a tile on the screen. It's called at each iteration
+        to update the screen with the current state of the game.
+
+        Parameters:
+            tile (int): tile to draw
+            x (int): x coordinate
+            y (int): y coordinate
+        """
+        if tile == self._selected_tile:
+            # Draw a blue blob
+            pygame.draw.circle(self._screen, (0, 0, 255), (x + self._edges[0].get_width() // 2, y + self._edges[0].get_height() // 2), self._edges[0].get_width() // 2)
+        else:
+            # Select the images for the tile's values
+            image1 = self._edges[int(tile[0])]
+            image2 = self._edges[int(tile[1])]
+
+            # Draw the images
+            self._screen.blit(image1, (x, y))
+            self._screen.blit(image2, (x + image1.get_width(), y))
+
+    # TODO: improve this function so that it doens't count the empty space between tiles as part of the tile
+    def _get_tile_at_pos(self, pos):
+        tile_width = self._edges[0].get_width() * 2  # assuming all tiles have the same width
+        space_between_tiles = 20  # adjust this value to your liking
+
+        # Calculate the x-coordinate of the first tile in the hand
+        hand = self._state.hands[self._current_player]
+        hand_width = len(hand) * (tile_width + space_between_tiles) - space_between_tiles
+        start_x = (self._screen.get_width() - hand_width) // 2
+
+        # Calculate the index of the tile based on the x-coordinate of the position
+        index = (pos[0] - start_x) // (tile_width + space_between_tiles) # + space_between_tiles)
+        if 0 <= index < len(hand):
+            return hand[index]
+        else:
+            return None
+        
     def _convert_mouse_position_to_grid(
         self, mouse_pos: t.Tuple[int, int]
     ) -> t.Tuple[int, int]:
@@ -277,8 +383,21 @@ class Dominoes(base.Game):
         return x, y
 
     def play(self, mouse_pos, mouse_pressed):
+        """
+        Abstact interface of the function play(). At each iteration, it requires the mouse position
+        and state (which button was pressed, if any).
+        
+        Parameters:
+            mouse_pos (tuple): Position of the mouse (X,Y coordinates)
+            mouse_pressed (tuple): 1 if the i-th button is pressed (i.e. right click left click)
+        """
+        state = self._state
+        if mouse_pressed[0]:  # left mouse button
+            self._selected_tile = self._get_tile_at_pos(mouse_pos)
+        else:
+            self._selected_tile = None
         if (
-            (self._current_player == 0 and self._player_color == "b")
+            (self._current_player == 0 and self._player_color == "b") # human player
             or (self._current_player == 1 and self._player_color == "w")
         ) and (mouse_pressed[0]):
             row, col = self._convert_mouse_position_to_grid(mouse_pos)
@@ -308,20 +427,53 @@ class Dominoes(base.Game):
         self._state_string = self._state.to_string()
 
         # Visualization
-        self._screen.blit(self._background, (0, 0))
 
-        for row in range(8):
-            for col in range(8):
-                token = self._state_string[self._get_token_by_position(row, col)]
-                x, y = self._get_coordinates_by_position(row, col)
+        # background
+        # self._screen.blit(self._background, (0, 0))
+        # Fill the screen with green
+        self._screen.fill((3,250,10))
 
-                if token == "b":
-                    if row == self._selected_row and col == self._selected_col:
-                        self._screen.blit(self._pawn_white_selected, (x, y))
-                    else:
-                        self._screen.blit(self._pawn_black, (x, y))
-                elif token == "w":
-                    if row == self._selected_row and col == self._selected_col:
-                        self._screen.blit(self._pawn_white_selected, (x, y))
-                    else:
-                        self._screen.blit(self._pawn_white, (x, y))
+        # print the board
+        self._draw_board()
+
+        self._draw_tile((6,5), 500, 500)
+        self._draw_hand(0)
+        # if state.is_chance_node():
+        #     outcomes = state.chance_outcomes()
+        #     action_list, prob_list = zip(*outcomes)
+        #     outcome = np.random.choice(action_list, p=prob_list)
+        #     print(f"Chance chose: {outcome} ({state.action_to_string(outcome)})")
+        #     print(self._state.hands)
+        #     state.apply_action(outcome)
+
+        # # Get the hands of the players
+        # hand1 = state.hands[0]
+        # hand2 = state.hands[1]
+        # # Render the text
+        # text_surface1 = self._text_font.render(f"{hand1}", True, (255, 255, 255))  # Change the color as needed
+        # text_surface2 = self._text_font.render(f"{hand2}", True, (255, 255, 255))  # Change the color as needed
+        # # Get the screen height
+        # screen_height = self._screen.get_height()
+        # # Blit the text surface onto the screen at the bottom
+        # self._screen.blit(text_surface1, (0, screen_height - text_surface1.get_height()))
+        # self._screen.blit(text_surface2, (0, 0))
+        # # show the hand of the players
+        # # for player in range(2):
+        # #     hand = state.legal_actions(player)
+
+
+        # for row in range(8):
+        #     for col in range(8):
+        #         token = self._state_string[self._get_token_by_position(row, col)]
+        #         x, y = self._get_coordinates_by_position(row, col)
+
+        #         if token == "b":
+        #             if row == self._selected_row and col == self._selected_col:
+        #                 self._screen.blit(self._pawn_white_selected, (x, y))
+        #             else:
+        #                 self._screen.blit(self._pawn_black, (x, y))
+        #         elif token == "w":
+        #             if row == self._selected_row and col == self._selected_col:
+        #                 self._screen.blit(self._pawn_white_selected, (x, y))
+        #             else:
+        #                 self._screen.blit(self._pawn_white, (x, y))
