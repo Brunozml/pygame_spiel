@@ -37,6 +37,7 @@ def pygame_spiel():
     done = False
     clock = pygame.time.Clock()
 
+    # Main loop
     while not done:
         clock.tick(10)
 

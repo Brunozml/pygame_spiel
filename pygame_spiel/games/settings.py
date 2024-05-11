@@ -4,6 +4,6 @@ GAMES_BOTS = {
     "python_block_dominoes": {"random": []},
 }
 
-SCREEN_SIZE = {"tic_tac_toe": [600, 600], "breakthrough": [1200, 1200], "python_block_dominoes": [800, 800]}
+SCREEN_SIZE = {"tic_tac_toe": [600, 600], "breakthrough": [1200, 1200], "python_block_dominoes": [1200, 800]}
 
 BREAKPOINTS_DRIVE_IDS = {"breakthrough": {"dqn": "1c7y-vFezKvNF6qT3kGgEodkv0z6kvwPZ"}}

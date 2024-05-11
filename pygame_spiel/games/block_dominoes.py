@@ -8,29 +8,34 @@ import numpy as np
 from pygame_spiel.games import base
 from open_spiel.python.games.block_dominoes import Action, _ACTIONS, _ACTIONS_STR
 
+LEFT_MOUSE_BUTTON = 0
+HUMAN_PLAYER = 0
+
 class Dominoes(base.Game):
     def __init__(self, name, current_player):
         super().__init__(name, current_player)
 
-        self._player_color = "b" if self._current_player == 0 else "w"
-        self._n_rows, self._n_cols, self._n_directions = 8, 8, 6
+        self._text_font = pygame.font.SysFont("Arial", 20)
+        self._space_between_tiles = 20
+        self._selected_tile = None
+        self.game_over = False
+
+        # Load images
+
         # package_path = site.getsitepackages()[0]
         # for development-mode install, ho up one level to the 'pygame_spiel' directory
         project_root = Path(__file__).resolve().parents[2]
-        self._text_font = pygame.font.SysFont("Arial", 20)
-
-        # Load images
-        self._background = pygame.image.load(
-            project_root / "pygame_spiel/images/breakthrough/chess_board.png"
-        ).convert_alpha()
-
         self._edges = [
             pygame.image.load(
                 project_root / "pygame_spiel" / "images" / "block_dominoes" / f"{i}.png").convert_alpha()
                   for i in range(7)
         ]
-        self._space_between_tiles = 20
-        self._selected_tile = None
+        self._arrows = [
+            pygame.image.load(
+                project_root / "pygame_spiel" / "images" / "block_dominoes" / f"left.png").convert_alpha(), 
+            pygame.image.load(
+                project_root / "pygame_spiel" / "images" / "block_dominoes" / f"right.png").convert_alpha()
+        ]
 
 
     def _draw_board(self):
@@ -41,11 +46,10 @@ class Dominoes(base.Game):
         to update the screen with the current state of the game.
         """
 
-        # Fill the screen with green
-        self._screen.fill((3,250,10))
+        # Fill the screen with white
+        self._screen.fill((255,255,255))
 
         # print the board
-
         if self._state.is_chance_node():
             outcomes = self._state.chance_outcomes()
             action_list, prob_list = zip(*outcomes)
@@ -58,9 +62,13 @@ class Dominoes(base.Game):
         # draw the played hands
         board = self._get_board()
         tile_width = self._edges[0].get_width() * 2  # Assuming this is the width of a tile
+        total_width = len(board) * tile_width  # Total width of all tiles
+
+        # Calculate the starting x-coordinate so that the tiles are centered
+        start_x = (self._screen.get_width() - total_width) / 2
         for i, tile in enumerate(board):
-            x = 100 + i * tile_width
-            y = 200
+            x = start_x + i * tile_width
+            y = (self._screen.get_height() - self._edges[0].get_height()) / 2
             self._draw_tile(tile, x, y)
     
     def _draw_hand(self, player_id):
@@ -115,31 +123,39 @@ class Dominoes(base.Game):
             self._screen.blit(image1, (x, y))
             self._screen.blit(image2, (x + image1.get_width(), y))
         
-    def _draw_text(self, text: str, text_col: t.Tuple[int, int, int], x: int, y: int):
+    def _draw_text(self, text: str):
         """
         Draws a text on the board. Used to write whether the player has won or
         lost the game
 
         Parameters:
             text (str): text to visualize
-            text_col (tuple): text's color in the format (red, blue, green)
-            x (int): x coordinate
-            y (int): y coordinate
-
-                    # Get the hands of the players
-        hand1 = self._state.hands[0]
-        hand2 = self._state.hands[1]
-        # Render the text
-        text_surface1 = self._text_font.render(f"{hand1}", True, (255, 255, 255))
-        text_surface2 = self._text_font.render(f"{hand2}", True, (255, 255, 255))
-
-        screen_height = self._screen.get_height()
-        self._screen.blit(text_surface1, (0, screen_height - text_surface1.get_height()))
-        self._screen.blit(text_surface2, (0, 0))
-
         """
+        text_col = (0, 0, 0)  # Set a default color for the text
         img = self._text_font.render(text, True, text_col)
-        self._screen.blit(img, (x, y))
+        text_rect = img.get_rect(center=(self._screen.get_width() / 2, self._screen.get_height() * 0.7))
+        self._screen.blit(img, text_rect)
+    
+    def _draw_arrows(self):
+        """
+        Draws the arrows on the screen.
+
+        This function is used to draw the arrows on the screen. It's called at each iteration
+        to update the screen with the current state of the game.
+        """
+        # Draw the arrows
+    
+        self._screen.blit(self._arrows[0], (100, 100))
+        self._screen.blit(self._arrows[1], (100 + self._arrows[0].get_width(), 100))
+
+    def _draw_game_over_text(self):
+        rewards = self._state.rewards()
+        if rewards[0] == rewards[1]:
+            self._draw_text("It's a draw!")
+        elif rewards[0] > 0:
+            self._draw_text(f"Human wins! {rewards[0]} points")
+        elif rewards[1] > 0:
+            self._draw_text(f"Player 2 wins! {rewards[1]} points")
 
     # TODO: improve this function so that it doens't count the empty space between tiles as part of the tile
     def _get_tile_at_pos(self, pos):
@@ -197,56 +213,57 @@ class Dominoes(base.Game):
 
             current_open_edges = board[0][0], board[-1][1]
         return board
-
-    # TODO: add support for when more than one action is available 
-    def _get_action_index(self, tile):
-        """ returns the index of the action in the list of actions. Currently only supports first move"""
-        state = self._state
-        if not state.open_edges: # first move
-            action = Action(0, tile, None)
-        elif tile[0] == state.open_edges[0] or tile[1] == state.open_edges[0]:
-            action = Action(0, tile, state.open_edges[0])
-        elif tile[0] == state.open_edges[1] or tile[1] == state.open_edges[1]:
-            action = Action(0, tile, state.open_edges[1])
-        else: # invalid move
-            return
-
-        return _ACTIONS_STR.index(str(action))
     
+    
+    def _handle_mouse_press(self, mouse_pos, mouse_pressed):
+        # if self._current_player == -4:  # game is over
+        #     return
+        if mouse_pressed[LEFT_MOUSE_BUTTON]:
+            self._selected_tile = self._get_tile_at_pos(mouse_pos)
+        else:
+            self._selected_tile = None
+    
+    def _handle_tile_selection(self):
+        if self.game_over: # game is over
+            return
+        actions = self._get_action_indices(self._selected_tile)
+        print("actions: ", actions)
+        if not actions:
+            print("No legal actions")
+            return
+        elif len(actions) == 1:
+            action = actions[0]
+            self._state.apply_action(action)
+        elif len(actions) == 2:  # can play on both edges
+            self._draw_arrows()
+            print("can play on both sides!")
+
+    def _get_action_indices(self, tile):
+        """Returns the indices of the actions in the list of actions."""
+        state = self._state
+        actions = []
+
+        if not state.open_edges:  # first move
+            actions.append(Action(0, tile, None))
+        else:
+            # can play on both edges
+            if (tile[0] == state.open_edges[0] and tile[1] == state.open_edges[1]) or (tile[1] == state.open_edges[0] and tile[0] == state.open_edges[1]):
+                actions.append(Action(0, tile, state.open_edges[0]))
+                actions.append(Action(0, tile, state.open_edges[1]))
+            # can play only on the left edge
+            elif tile[0] == state.open_edges[0] or tile[1] == state.open_edges[0]:
+                actions.append(Action(0, tile, state.open_edges[0]))
+            # can play only on the right edge
+            elif tile[0] == state.open_edges[1] or tile[1] == state.open_edges[1]:
+                actions.append(Action(0, tile, state.open_edges[1]))
+
+        # Convert actions to indices
+        action_indices = [_ACTIONS_STR.index(str(action)) for action in actions]
+
+        return action_indices
 
 
-        
-    # NOTE: not currently used but could be useful for future implementations
-    def _convert_mouse_position_to_grid(
-        self, mouse_pos: t.Tuple[int, int]
-    ) -> t.Tuple[int, int]:
-        """
-        Maps mouse x/y position to cell's row/column coordinates on the board.
-
-        This function is used to retrieve the coordinates of the mouse position, which
-        is used to determine whether the mouse's arrow is touching a selected token or
-        empty cell.
-
-        Parameters:
-            mouse_pos (tuple): contains the x/y position of the mouse (0: X, 1: Y)
-
-        Returns:
-            row (int): cell's row
-            col (int): cell's column
-        """
-
-        offset = 246
-        cell_size = 84
-        border_size = 6
-
-        row = math.floor(
-            (mouse_pos[1] - offset + border_size) / (cell_size + border_size)
-        )
-        col = math.floor(
-            (mouse_pos[0] - offset + border_size) / (cell_size + border_size)
-        )
-        return row, col
-
+    # NOTE: Not used
     def _action_to_string(self, action: int) -> str:
         """
         Converts the action value to a string representing start and end position.
@@ -264,31 +281,6 @@ class Dominoes(base.Game):
         action_string = ""
         return action_string
 
-    def _from_action_string_to_int(
-        self,
-        selected_pawn_row: int,
-        selected_pawn_col: int,
-        dest_row: int,
-        dest_col: int,
-        token: "str",
-    ) -> int:
-        """
-        Returns the action id given token's actual and destination position.
-
-        To better understand the logic in this function, please refer to the following links in open_spiel
-        which have been used as inspiration:
-
-        Parameters:
-            ...
-
-        Returns:
-            action (int): block_dominoes's unique action id
-        """
-        action = None
-        ...
-
-        return action
-
 
     def play(self, mouse_pos, mouse_pressed):
         """
@@ -299,62 +291,10 @@ class Dominoes(base.Game):
             mouse_pos (tuple): Position of the mouse (X,Y coordinates)
             mouse_pressed (tuple): 1 if the i-th button is pressed (i.e. right click left click)
         """
-        state = self._state
-        if mouse_pressed[0]:  # left mouse button
-            self._selected_tile = self._get_tile_at_pos(mouse_pos)
-        else:
-            self._selected_tile = None
-
-        # DEBUGGING
-        if self._current_player == 0 and self._selected_tile is not None:
-            action = self._get_action_index(self._selected_tile)
-            if action in state.legal_actions():
-                state.apply_action(action)
-                print(f"Applied action: {action}")
-        elif self._current_player == 1:
-            action = self._bots[1].step(state)
-            state.apply_action(action)
-            print(f"{self._bots[1]} applied action: {action}" if action is not None else "No action applied")
-           
-           
-            # print( f"Selected tile: {self._selected_tile}, "
-            #        f"index {self._get_action_index(self._selected_tile)}"
-            #        f"is legal: {self._get_action_index(self._selected_tile) in state.legal_actions()}"
-            # )
-        
-        # # action-apply logic for breakthrough
-        # if (
-        #     (self._current_player == 0 and self._player_color == "b") # human player
-        #     or (self._current_player == 1 and self._player_color == "w")
-        # ) and (mouse_pressed[0]):
-        #     row, col = self._convert_mouse_position_to_grid(mouse_pos)
-        #     token = self._state_string[self._get_token_by_position(row, col)]
-        #     if self._selected_row is None and token == self._player_color:
-        #         self._selected_row, self._selected_col = row, col
-        #     elif self._selected_row is not None and token == self._player_color:
-        #         self._selected_row, self._selected_col = None, None
-        #     elif self._selected_row is not None and token != self._player_color:
-        #         # A pawn has been selected. If no other pawn is chosen, do not change assignment.
-        #         action = self._from_action_string_to_int(
-        #             self._selected_row, self._selected_col, row, col, token
-        #         )
-        #         if action is not None and action in self._state.legal_actions():
-        #             self._state.apply_action(action)
-        #             self._bots[1].inform_action(
-        #                 self._state, self._current_player, action
-        #             )
-        #             self._selected_row, self._selected_col = None, None
-        # elif (self._current_player == 1 and self._player_color == "b") or (
-        #     self._current_player == 0 and self._player_color == "w"
-        # ):
-        #     action = self._bots[1].step(self._state)
-        #     self._state.apply_action(action)
-
-        self._current_player = self._state.current_player()
-        self._state_string = self._state.to_string()
-
+        if self.game_over:
+            self._draw_game_over_text()
+            return
         # Visualization
-
         # background
         # self._screen.blit(self._background, (0, 0))
         # Fill the screen with green
@@ -364,14 +304,35 @@ class Dominoes(base.Game):
         self._draw_board()
         self._draw_hand(0)
         self._draw_hand(1)
+
+        state = self._state
+
+        # action-apply logic for block_dominoes for human player (player 0)
+        self._handle_mouse_press(mouse_pos, mouse_pressed)
+        # DEBUGGING
+        if self._current_player == -4: # game is over
+            return
+        if self._current_player == HUMAN_PLAYER and (self._selected_tile is not None):
+            print(f"Selected tile: {self._selected_tile}, ")
+            self._handle_tile_selection()
+        elif self._current_player == 1:
+            action = self._bots[1].step(state)
+            state.apply_action(action)
+            print(f"bot applied action: {action}" if action is not None else "No action applied")
+           
+           
+            # print( f"Selected tile: {self._selected_tile}, "
+            #        f"index {self._get_action_index(self._selected_tile)}"
+            #        f"is legal: {self._get_action_index(self._selected_tile) in state.legal_actions()}"
+            # )
+
+
+        self._current_player = self._state.current_player()
+        self._state_string = self._state.to_string()
+
+
         # print(self._get_board())
 
         # game is over
         if self._current_player == -4:
-            rewards = self._state.rewards()
-            if rewards[0] == rewards[1]:
-                self._draw_text("It's a draw!", (255, 255, 255), 600, 500)
-            elif rewards[0] > 0:
-                self._draw_text(f"Player 1 wins! {rewards[0]} points", (255, 255, 255), 600, 500)
-            elif rewards[1] > 0:
-                self._draw_text(f"Player 2 wins! {rewards[1]} points", (255, 255, 255), 600, 500)
+            self.game_over = True
