@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from pygame_spiel.games import base
 from open_spiel.python.games.block_dominoes import Action, _ACTIONS, _ACTIONS_STR
+import time
 
 LEFT_MOUSE_BUTTON = 0
 HUMAN_PLAYER = 0
@@ -15,7 +16,10 @@ class Dominoes(base.Game):
     def __init__(self, name, current_player):
         super().__init__(name, current_player)
 
-        self._text_font = pygame.font.SysFont("Arial", 20)
+        self._text_font = pygame.font.SysFont("Arial", 24)
+        self._night_mode = True
+        self._last_click_time = 0
+        self._click_delay = 0.1  # Delay of 0.1 seconds between clicks
         self._space_between_tiles = 20
         self._selected_tile = None
         self._selected_tile_has_multiple_actions = False
@@ -24,13 +28,18 @@ class Dominoes(base.Game):
         self._selected_arrow = None
 
         # Load images
-
+        desired_size = (48,48)
         # package_path = site.getsitepackages()[0]
         # for development-mode install, ho up one level to the 'pygame_spiel' directory
         project_root = Path(__file__).resolve().parents[2]
+        night_str = "n" if self._night_mode else ""
         self._edges = [
-            pygame.image.load(
-                project_root / "pygame_spiel" / "images" / "block_dominoes" / f"{i}.png").convert_alpha()
+            pygame.transform.scale(
+                pygame.image.load(
+                    project_root / "pygame_spiel" / "images" / "block_dominoes" / f"{i}{night_str}.png"
+                ).convert_alpha(),
+                desired_size
+            )
                   for i in range(7)
         ]
         self._arrows = [
@@ -62,8 +71,35 @@ class Dominoes(base.Game):
 
             # Draw the images
             self._screen.blit(image1, (x, y))
-            self._screen.blit(image2, (x + image1.get_width(), y))
-        
+            self._screen.blit(image2, (x + image1.get_width() - image1.get_width()// 20, y)) # small offset
+    
+    def _draw_vertical_tile(self, tile, x, y):
+        """
+        Draws a tile vertically on the screen.
+
+        This function is used to draw a tile on the screen. It's called at each iteration
+        to update the screen with the current state of the game.
+
+        Parameters:
+            tile (int): tile to draw
+            x (int): x coordinate
+            y (int): y coordinate
+        """
+        if tile == self._selected_tile:
+            # Draw a blue blob
+            pygame.draw.circle(self._screen, (0, 0, 255), (x + self._edges[0].get_width() // 2, y + self._edges[0].get_height()), self._edges[0].get_width() // 2)
+        else:
+            # Select the images for the tile's values
+            image1 = self._edges[int(tile[0])]
+            image2 = self._edges[int(tile[1])]
+            
+            # Rotate the images
+            image1 = pygame.transform.rotate(image1, 90)
+            image2 = pygame.transform.rotate(image2, 90)
+
+            # Draw the images
+            self._screen.blit(image1, (x, y))
+            self._screen.blit(image2, (x, y + image1.get_height()))  # Draw the second image below the first one
     def _draw_text(self, text: str):
         """
         Draws a text on the board. Used to write whether the player has won or
@@ -72,7 +108,7 @@ class Dominoes(base.Game):
         Parameters:
             text (str): text to visualize
         """
-        text_col = (0, 0, 0)  # Set a default color for the text
+        text_col = (255, 255, 255)  if self._night_mode else (0, 0, 0)
         img = self._text_font.render(text, True, text_col)
         text_rect = img.get_rect(center=(self._screen.get_width() / 2, self._screen.get_height() * 0.7))
         self._screen.blit(img, text_rect)
@@ -113,8 +149,9 @@ class Dominoes(base.Game):
         Args:
             player_id (int): The ID of the player whose hand is being drawn. 0 or 1
         """
+        margin = 15
         hand = self._state.hands[player_id]
-        tile_width = self._edges[0].get_width() * 2  # assuming all tiles have the same width
+        tile_width = self._edges[0].get_width()  # assuming all tiles have the same width
 
         # Calculate the total width of the hand
         hand_width = len(hand) * (tile_width + self._space_between_tiles) - self._space_between_tiles
@@ -123,15 +160,15 @@ class Dominoes(base.Game):
         start_x = (self._screen.get_width() - hand_width) // 2
 
         # Calculate the y-coordinate based on the player_id
-        if player_id == 0:
-            y = self._screen.get_height() - self._edges[0].get_height()  # bottom of the screen
+        if player_id == HUMAN_PLAYER:
+            y = self._screen.get_height() - self._edges[0].get_height() * 2 - margin # bottom of the screen
         else:
-            y = 0  # top of the screen
+            y = margin # top of the screen
 
             # Draw the tiles
         for i, tile in enumerate(hand):
             x = start_x + i * (tile_width + self._space_between_tiles)
-            self._draw_tile(tile, x, y)
+            self._draw_vertical_tile(tile, x, y)
     
     def _draw_board(self):
         board = self._get_board()
@@ -142,12 +179,13 @@ class Dominoes(base.Game):
         start_x = (self._screen.get_width() - total_width) / 2
 
         for i, tile in enumerate(board):
-            x = start_x + i * tile_width
+            # If the tile has the same number on both edges, draw it vertically
             y = (self._screen.get_height() - self._edges[0].get_height()) / 2
+            x = start_x + i * tile_width
             self._draw_tile(tile, x, y)
     
     def _draw_game_state(self):
-        self._screen.fill((255,255,255))  # Fill the screen with white
+        self._screen.fill((0,0,0) if self._night_mode else (255,255,255))
         self._draw_board()
         self._draw_hand(0)
         self._draw_hand(1)
@@ -198,14 +236,14 @@ class Dominoes(base.Game):
         Returns:
             tile (object): The tile object at the given position, or None if no tile is found.
         """
-        tile_width = self._edges[0].get_width() * 2  # assuming all tiles have the same width
+        tile_width = self._edges[0].get_width()  # assuming all tiles have the same width
         space_between_tiles = 20  # adjust this value to your liking
 
         # Calculate the y-coordinate of the hand
         hand_y = self._screen.get_height() - self._edges[0].get_height() - 10  # adjust this value to your liking
 
         # If the y-coordinate of the position is not within a certain range from the bottom of the screen, return None
-        if not (hand_y <= pos[1] <= hand_y + self._edges[0].get_height()):
+        if not (hand_y <= pos[1] <= hand_y + self._edges[0].get_height() * 2):
             return None
 
         # Calculate the x-coordinate of the first tile in the hand
@@ -253,7 +291,10 @@ class Dominoes(base.Game):
     
     
     def _handle_mouse_press(self, mouse_pos, mouse_pressed):
+        current_time = time.time()
         if mouse_pressed[LEFT_MOUSE_BUTTON]:
+            if current_time - self._last_click_time < self._click_delay:
+                return
             # If a tile is selected and has multiple actions
             if self._selected_tile is not None and self._selected_tile_has_multiple_actions:
                 for i, (arrow_x, arrow_y) in enumerate(self._arrow_positions):
@@ -270,6 +311,8 @@ class Dominoes(base.Game):
                 # If the mouse click is somewhere else on the screen
                 self._selected_tile = None
                 self._selected_arrow = None
+            
+            self._last_click_time = current_time
     
     def _handle_tile_selection(self):
         if self.game_over: # game is over
@@ -309,8 +352,8 @@ class Dominoes(base.Game):
             if self._current_player == HUMAN_PLAYER and (self._selected_tile is not None):
                 print(f"Selected tile: {self._selected_tile}, ")
                 self._handle_tile_selection()
-            elif self._current_player == 1:
-                action = self._bots[1].step(self._state)
+            elif self._current_player == (HUMAN_PLAYER + 1) % 2: # assumes 2 players
+                action = self._bots[(HUMAN_PLAYER + 1) % 2].step(self._state)
                 self._state.apply_action(action)
                 print(f"bot applied action: {action}" if action is not None else "No action applied")
 
