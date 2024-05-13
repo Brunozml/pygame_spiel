@@ -16,8 +16,6 @@ ideal to first be aware of the general API for OpenSpiel (see `open_spiel/spiel.
     *   In the new file, rename `TicTacToeGame` to
         `NewGameGame`.
     * In `__init__py`, import your NewGame class `from pygame_spiel.games.new_game import NewGame`.
-    *   At the top of `new_game.cc`, change the short name to `new_game` and
-        include the new game’s header.
 4.  You should now have a duplicate game of Tic-Tac-Toe under a different name.Now, change the implementations of the functions in `NewGameGame` and
     `NewGameState` to reflect your new game’s logic. Most API functions should be clear from the game you copied from.
 5. Add your game to the dropselect menu in `pygame_spiel/menu.py`.
