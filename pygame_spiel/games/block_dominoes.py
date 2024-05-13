@@ -17,7 +17,7 @@ class Dominoes(base.Game):
         super().__init__(name, current_player)
 
         self._text_font = pygame.font.SysFont("Arial", 24)
-        self._night_mode = True
+        self._night_mode = False
         self._last_click_time = 0
         self._click_delay = 0.1  # Delay of 0.1 seconds between clicks
         self._space_between_tiles = 20

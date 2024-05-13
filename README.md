@@ -27,3 +27,4 @@ pygame_spiel
 Use your mouse to select the cell (tic tac toe) or select pawn and destination cell (breakthrough).
 
 ![breakthrough_tic_tac_toe](https://github.com/giogix2/pygame_spiel/assets/5859539/dd5f8709-f383-497e-8317-a113ca50d1e7)
+![dominoes](src/dominoes.gif)

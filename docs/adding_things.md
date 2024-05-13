@@ -29,6 +29,7 @@ ideal to first be aware of the general API for OpenSpiel (see `open_spiel/spiel.
     [pylintrc from the Google style guide](https://google.github.io/styleguide/pyguide.html).
     There is also [YAPF](https://github.com/google/yapf/) for Python as well.
 
+![dominoes](../src/dominoes.gif)
 
 ## Adding a bot
 
@@ -37,3 +38,5 @@ Bots follow the standard RL structure, specified for OpenSpiel in
 
 1. Specify the name of the bot(s) available for your game at the top of `pygame_spiel/games/settings.py`.
 2. If your bot type hasn't yet been implemented, you'll need to add it to the `init_bot(...)` function in `pygame_spiel/utils.py`.
+
+![dominoes-2](../src/dominoes-2.gif)
