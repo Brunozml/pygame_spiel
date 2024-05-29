@@ -19,13 +19,14 @@ def pygame_spiel():
     game_name = menu.get_selected_game()
     bot_type = menu.get_selected_opponent()
 
-    player_id = 0
+    player_id = 0 # this doesn't really seem to matter
 
     assert (
         bot_type in GAMES_BOTS[game_name].keys()
     ), f"""Bot type {bot_type} not available for game {game_name}. List of 
         available bots: {list(GAMES_BOTS[game_name].keys())}"""
 
+    # # # THIS DEFINITELY DOES SOMETHING 
     game = GameFactory.get_game(game_name, current_player=player_id)
     game.set_bots(
         bot1_type="human",
@@ -33,6 +34,13 @@ def pygame_spiel():
         bot2_type=bot_type,
         bot2_params=None,
     )
+    # game.set_bots(
+    #     bot1_type=bot_type,
+    #     bot1_params=None,
+    #     bot2_type="human",
+    #     bot2_params=None,
+    # )
+
 
     done = False
     clock = pygame.time.Clock()

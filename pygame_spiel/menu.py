@@ -77,6 +77,7 @@ class Menu:
             bot_type (str): opponent type selected in the drop-select menu
             opp_index (int): index of the selected opponent type
         """
+        print("bot type list thingy:", bot_type)
         self._selected_opponent_type = bot_type[0][0]
 
     def _start_game(self):

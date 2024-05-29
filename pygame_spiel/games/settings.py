@@ -1,7 +1,7 @@
 GAMES_BOTS = {
     "tic_tac_toe": {"mcts": [], "random": []},
     "breakthrough": {"mcts": [], "dqn": ["breakthrough_weights"], "random": []},
-    "python_block_dominoes": {"random": [], "dqn": []},
+    "python_block_dominoes": {"random": [], "dqn": [], "bota_gorda": []},
 }
 
 SCREEN_SIZE = {"tic_tac_toe": [600, 600], "breakthrough": [1200, 1200], "python_block_dominoes": [1400, 800]}

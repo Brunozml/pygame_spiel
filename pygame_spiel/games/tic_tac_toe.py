@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pygame_spiel.games import base
 
-
+HUMAN_PLAYER = 1
 # Go up one level to the 'pygame_spiel' directory
 project_root = Path(__file__).resolve().parents[1]
 
@@ -116,14 +116,14 @@ class TicTacToe(base.Game):
         self._screen.blit(img, (x, y))
 
     def play(self, mouse_pos, mouse_pressed):
-        if self._current_player == 0 and (mouse_pressed[0]):
+        if self._current_player == HUMAN_PLAYER and (mouse_pressed[0]):
             action = self._get_quadrant(mouse_pos[0], mouse_pos[1])
             if self._quadrant_pos_map_x[action] not in self._list_x_pos:
                 self._state.apply_action(action)
                 self._bots[1].inform_action(self._state, self._current_player, action)
                 if self._quadrant_pos_map_x[action] not in self._list_x_pos:
                     self._list_x_pos.append(self._quadrant_pos_map_x[action])
-        elif self._current_player == 1: # bot
+        elif self._current_player == (HUMAN_PLAYER +1)  % 2: # bot
             action = self._bots[1].step(self._state)
             if self._quadrant_pos_map_circle[action] not in self._list_o_pos:
                 self._state.apply_action(action)

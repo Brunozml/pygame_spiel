@@ -6,6 +6,7 @@ import os
 
 import pyspiel
 from pygame_spiel.bots import dqn
+from pygame_spiel.bots import botagorda
 
 from open_spiel.python.bots import uniform_random, human
 from open_spiel.python.algorithms import mcts
@@ -45,7 +46,7 @@ def init_bot(
         )
         return bot
     if bot_type == "random":
-        bot = uniform_random.UniformRandomBot(1, rng)
+        bot = uniform_random.UniformRandomBot(1, rng) # TODO: check if player_id is correct. THIS IS CHANGING IT ALL.
         return bot
     if bot_type == "dqn":
         # We need to load bots for both players, because the models have been trained
@@ -57,10 +58,13 @@ def init_bot(
         return bot0 if player_id == 0 else bot1
     if bot_type == "human":
         return human.HumanBot()
+    if bot_type == "bota_gorda":
+        print (bot_type, game, player_id)
+        return botagorda.BotaGorda(game, player_id)
     raise ValueError("Invalid bot type: %s" % bot_type)
 
-
-def download_weights(file_id, dest_folder):
+# NOTE: TO REAVIEW
+def download_weights_from_drive(file_id, dest_folder):
     """
     Download breakpoints from Google Drive. This function downloads the zip
     file containing the weights, un-compress it in a specified folder and

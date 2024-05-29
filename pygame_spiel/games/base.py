@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 
 from pygame_spiel.games.settings import SCREEN_SIZE, BREAKPOINTS_DRIVE_IDS
-from pygame_spiel.utils import init_bot, download_weights
+from pygame_spiel.utils import init_bot, download_weights_from_drive
 import open_spiel.python.games
 
 
@@ -60,23 +60,24 @@ class Game(metaclass=abc.ABCMeta):
 
         for i, bot_type in enumerate([bot1_type, bot2_type]):
             bot_breakpoint_dir = None
-            if bot_type in ["dqn"]:
-                breakpoint_dest_dir = Path(
-                    self._package_path,
-                    "pygame_spiel/data/breakpoints",
-                    bot_type,
-                    self._name,
-                )
-                file_id = BREAKPOINTS_DRIVE_IDS[self._name][bot_type]
-                print(breakpoint_dest_dir)
-                if not os.path.exists(breakpoint_dest_dir):
-                    print(
-                        f"Downloading breakpoints for bot {bot_type} and game {self._name}"
-                    )
-                    download_weights(
-                        file_id=file_id, dest_folder=str(breakpoint_dest_dir)
-                    )
-                bot_breakpoint_dir = Path(breakpoint_dest_dir, "weights_default")
+            if bot_type in ["dqn"]: # NOTE: TO REVIEW
+                # breakpoint_dest_dir = Path(
+                #     self._package_path,
+                #     "pygame_spiel/data/breakpoints",
+                #     bot_type,
+                #     self._name,
+                # )
+                # file_id = BREAKPOINTS_DRIVE_IDS[self._name][bot_type]
+                # print(breakpoint_dest_dir)
+                # if not os.path.exists(breakpoint_dest_dir):
+                #     print(
+                #         f"Downloading breakpoints for bot {bot_type} and game {self._name}"
+                #     )
+                #     download_weights_from_drive(
+                #         file_id=file_id, dest_folder=str(breakpoint_dest_dir)
+                #     )
+                # bot_breakpoint_dir = Path(breakpoint_dest_dir, "weights_default")
+                bot_breakpoint_dir = '/Users/brunozorrilla/Documents/GitHub/pygame_spiel/pygame_spiel/data/breakpoints/dominoes/dqn'
             bot = init_bot(
                 bot_type, self._game, player_id=i, breakpoint_dir=bot_breakpoint_dir
             )
