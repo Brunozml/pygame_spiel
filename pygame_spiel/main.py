@@ -7,6 +7,7 @@ from pygame_menu import themes
 from pygame_spiel.games.settings import GAMES_BOTS
 from pygame_spiel.games.factory import GameFactory
 from pygame_spiel.menu import Menu
+from pygame_spiel.games.closing_game import get_state
 
 
 def select_game(game, index):
@@ -34,6 +35,7 @@ def pygame_spiel():
         bot2_type=bot_type,
         bot2_params=None,
     )
+    game.set_initial_state(get_state)
     # game.set_bots(
     #     bot1_type=bot_type,
     #     bot1_params=None,

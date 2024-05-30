@@ -82,3 +82,6 @@ class Game(metaclass=abc.ABCMeta):
                 bot_type, self._game, player_id=i, breakpoint_dir=bot_breakpoint_dir
             )
             self._bots.append(bot)
+        
+    def set_initial_state(self, state_fun):
+        self._state = state_fun()

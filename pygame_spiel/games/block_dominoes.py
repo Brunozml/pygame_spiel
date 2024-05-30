@@ -371,4 +371,5 @@ class Dominoes(base.Game):
 
         self._update_state(mouse_pos, mouse_pressed)
         self._draw_game_state()
+    
 
